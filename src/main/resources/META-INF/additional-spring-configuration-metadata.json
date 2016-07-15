@@ -1,0 +1,27 @@
+{"properties": [
+  {
+    "name": "ktha.system.home-server-endpoint",
+    "type": "java.lang.String",
+    "description": "Endpoint for central ktha home server - format: http://<ip or address>:<port>"
+  },
+  {
+    "name": "ktha.system.timeout-between-reads",
+    "type": "java.lang.Integer",
+    "description": "Timeout for sensor readings, in milliseconds"
+  },
+  {
+    "name": "ktha.sensors.ds1820",
+    "type": "java.lang.Map",
+    "description": "Connected DS1820-Type sensors"
+  },
+  {
+    "name": "ktha.sensors.mcp3008",
+    "type": "java.lang.Map",
+    "description": "Connected MCP3008-Type sensors"
+  },
+  {
+    "name": "ktha.pwm",
+    "type": "java.lang.List",
+    "description": "Ports on the raspberry pi which are used for pwm - WiringPi-Numbering!"
+  }
+]}

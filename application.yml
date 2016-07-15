@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: ktharaspiservice
+ktha:
+  system:
+    homeServerEndpoint: http://arah.home.kawumtech.de:8080
+    timeoutBetweenReads: 3000
+  sensors:
+    ds1820:
+      testSensor01:
+        sensorBaseDirectory: /sys/bus/w1/devices
+        sensorHardwareId: 10-000802f954a2
+#      testSensor02: 
+#        sensorBaseDirectory: /sys/bus/w1/devices
+#        sensorHardwareId: 10-000802f954a3
+#    mcp3008:
+#      testSensor03:
+#        pin: 0
+#        spiChannel: CS0
+#        sensorType: ANALOG
+  pwm:
+    pwm_r: 23
+    pwm_g: 24
+    pwm_b: 22
