@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import de.kawumtech.ktha.restlib.sensor.pojo.SensorReading;
 import de.kawumtech.ktharaspiservice.measurement.service.MeasurementService;
 
 @Controller
@@ -18,7 +19,7 @@ public class MeasurementController
 	
 	@RequestMapping(value="/read/{sensorName}", method=RequestMethod.GET)
 	@ResponseBody
-	public double readSensor(@PathVariable final String sensorName)
+	public SensorReading<?> readSensor(@PathVariable final String sensorName)
 	{
 		return this.measurementService.readSensor(sensorName);
 	}

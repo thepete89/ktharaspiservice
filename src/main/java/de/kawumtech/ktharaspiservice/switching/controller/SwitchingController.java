@@ -3,7 +3,6 @@ package de.kawumtech.ktharaspiservice.switching.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import de.kawumtech.ktharaspiservice.switching.service.SwitchingService;
@@ -14,23 +13,22 @@ public class SwitchingController
 
 	@Autowired
 	private SwitchingService switchingService;
-	
-	@RequestMapping(value="/switch/on/{switchGroup}/{switchCode}", method=RequestMethod.GET)
-	public void switchOn(@PathVariable final String switchGroup, @PathVariable final int switchCode)
+		
+	@RequestMapping(value="/switch/set/{actuator}/{value}")
+	public void setValue(@PathVariable final String actuator, @PathVariable final Object value)
 	{
-		this.switchingService.switchOn(switchGroup, switchCode);
+		this.switchingService.setValue(actuator, value);
 	}
 	
-	@RequestMapping(value="/switch/off/{switchGroup}/{switchCode}", method=RequestMethod.GET)
-	public void switchOff(@PathVariable final String switchGroup,@PathVariable final int switchCode)
+	@RequestMapping(value="/switch/on/{actuator}")
+	public void switchOn(@PathVariable final String actuator)
 	{
-		this.switchingService.switchOff(switchGroup, switchCode);
+		this.switchingService.switchOn(actuator);
 	}
 	
-	@RequestMapping(value="/switch/pwm/{pwmPin}/{value}")
-	public void setPwm(@PathVariable final String pwmPin,@PathVariable final int value)
+	@RequestMapping(value="/switch/off/{actuator}")
+	public void switchOff(@PathVariable final String actuator)
 	{
-		this.switchingService.setPwm(pwmPin, value);
+		this.switchingService.switchOff(actuator);
 	}
-	
 }

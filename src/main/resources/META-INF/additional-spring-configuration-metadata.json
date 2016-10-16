@@ -20,8 +20,18 @@
     "description": "Connected MCP3008-Type sensors"
   },
   {
-    "name": "ktha.pwm",
-    "type": "java.lang.List",
-    "description": "Ports on the raspberry pi which are used for pwm - WiringPi-Numbering!"
+    "name": "ktha.actuators.pwm",
+    "type": "java.lang.Map",
+    "description": "PWM actuators for PWM controll applications. Pins use WiringPi-Numbering!"
+  },
+  {
+    "name": "ktha.actuators.rcswitch",
+    "type": "java.lang.Map",
+    "description": "RCSwitch actuators for RF switching applications. Pins use WiringPi-Numbering!"
+  },
+  {
+    "name": "ktha.actuators.gpio",
+    "type": "java.lang.Map",
+    "description": "GPIO actuators for gpio switching applications. Pins use WiringPi-Numbering!"
   }
 ]}

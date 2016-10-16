@@ -1,6 +1,8 @@
 package de.kawumtech.ktharaspiservice.measurement.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
@@ -9,13 +11,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
 
+import de.kawumtech.ktha.restlib.api.client.RestConfiguration;
 import de.kawumtech.ktha.restlib.registration.RegistrationClient;
 import de.kawumtech.ktha.restlib.registration.RegistrationState;
 import de.kawumtech.ktha.restlib.sensor.client.SensorReadingClient;
+import de.kawumtech.ktha.restlib.sensor.pojo.SensorReading;
 import de.kawumtech.ktharaspiservice.configuration.SensorConfiguration;
 import de.kawumtech.ktharaspiservice.configuration.SystemConfiguration;
+import de.kawumtech.ktharaspiservice.hardware.sensors.SensorType;
 import de.kawumtech.ktharaspiservice.hardware.sensors.ds1820.DS1820Sensor;
 import de.kawumtech.ktharaspiservice.hardware.sensors.mcp3008.MCP3008Sensor;
 import de.kawumtech.ktharaspiservice.hardware.sensors.mcp3008.MCP3008SensorType;
@@ -48,26 +52,25 @@ public class MeasurementService
 	private void registerSensors()
 	{
 		LoggerFactory.getLogger(this.getClass()).info("Registering sensors.");
-		for (Entry<String, DS1820Sensor> sensorEntry : this.sensorConfiguration.getDs1820().entrySet())
-		{
-			RegistrationState state = this.registrationClient.registerSensor(sensorEntry.getKey());
-			LoggerFactory.getLogger(this.getClass()).info("Sensor " + sensorEntry.getKey() + " is " + state.name());
-		}
-		for (Entry<String, MCP3008Sensor> sensorEntry : this.sensorConfiguration.getMcp3008().entrySet())
-		{
-			RegistrationState state = this.registrationClient.registerSensor(sensorEntry.getKey());
-			LoggerFactory.getLogger(this.getClass()).info("Sensor " + sensorEntry.getKey() + " is " + state.name());
-		}
+		this.sensorConfiguration.getDs1820().forEach((key, value) -> this.registerSensor(key));
+		this.sensorConfiguration.getMcp3008().forEach((key, value) -> this.registerSensor(key));
 		LoggerFactory.getLogger(this.getClass()).info("All sensors registered!");
 	}
-
+	
+	private void registerSensor(String sensorName)
+	{
+		RegistrationState state = this.registrationClient.registerSensor(sensorName);
+		LoggerFactory.getLogger(this.getClass()).info("Sensor " + sensorName + " is " + state.name());
+	}
+	
 	private void initializeRestClients()
 	{
 		LoggerFactory.getLogger(this.getClass()).info("Creating and initializing REST clients");
-		this.sensorReadingClient = new SensorReadingClient();
-		this.sensorReadingClient.init(this.systemConfiguration.getHomeServerEndpoint());
-		this.registrationClient = new RegistrationClient();
-		this.registrationClient.init(this.systemConfiguration.getHomeServerEndpoint());
+		RestConfiguration configuration = RestConfiguration.builder().connectTimeout(2000).readTimeout(2000).serviceEndpoint(this.systemConfiguration.getHomeServerEndpoint()).build();
+		this.sensorReadingClient = SensorReadingClient.getInstance();
+		this.sensorReadingClient.init(configuration);
+		this.registrationClient = RegistrationClient.getInstance();
+		this.registrationClient.init(configuration);
 	}
 
 	private void showConfig()
@@ -87,79 +90,100 @@ public class MeasurementService
 		LoggerFactory.getLogger(this.getClass()).info("Timeout between reads: " + this.systemConfiguration.getTimeoutBetweenReads() + "ms");
 	}
 	
-	public double readSensor(String sensorName)
+	public SensorReading<?> readSensor(String sensorName)
 	{
-		double value = 0;
-		value = readValueFromDs1820(sensorName, value);
-		value = readValueFromMcp3008(sensorName, value);
-		return value;
+		SensorReading<?> reading = new SensorReading<>();
+		SensorType type = this.getSensorType(sensorName);
+		switch (type)
+		{
+		case ds1820:
+			reading = this.readValueFromDs1820(sensorName);
+			break;
+			
+		case mcp3008:
+			reading = this.readValueFromMcp3008(sensorName);
+			break;
+
+		default:
+			break;
+		}
+		return reading;
 	}
 
-	private double readValueFromMcp3008(String sensorName, double value)
+	private SensorType getSensorType(String sensorName)
 	{
+		SensorType type = SensorType.undefined;
+		if(this.sensorConfiguration.getDs1820().containsKey(sensorName))
+		{
+			type = SensorType.ds1820;
+		}
+		if(this.sensorConfiguration.getMcp3008().containsKey(sensorName))
+		{
+			type = SensorType.mcp3008;
+		}
+		return type;
+	}
+	
+	private SensorReading<Double> readValueFromMcp3008(String sensorName)
+	{
+		SensorReading<Double> reading = new SensorReading<Double>();
+		reading.setSensorName(sensorName);
+		reading.setValue(0.0);
 		if(this.sensorConfiguration.getMcp3008().containsKey(sensorName))
 		{
 			MCP3008Sensor sensor = this.sensorConfiguration.getMcp3008().get(sensorName);
-			value = sensor.readAnalogValue();
+			Double value = sensor.readAnalogValue();
 			if(sensor.getSensorType().equals(MCP3008SensorType.TEMPERATURE))
 			{
 				value = (value * VOLTAGE_PER_UNIT) / DEGREE_CONVERSION_FACTOR;
 			}
+			reading.setValue(value);
 		}
-		return value;
+		return reading;
 	}
 
-	private double readValueFromDs1820(String sensorName, double value)
+	private SensorReading<Double> readValueFromDs1820(String sensorName)
 	{
+		SensorReading<Double> reading = new SensorReading<Double>();
+		reading.setSensorName(sensorName);
+		reading.setValue(0.0);
 		if(this.sensorConfiguration.getDs1820().containsKey(sensorName))
 		{
 			try
 			{
-				value = this.sensorConfiguration.getDs1820().get(sensorName).readSensor();
+				reading.setValue(this.sensorConfiguration.getDs1820().get(sensorName).readSensor());
 			} catch (IOException e)
 			{
 				LoggerFactory.getLogger(this.getClass()).error("Could not read Sensor " + sensorName + " - threw IOException");
 			}
 		}
-		return value;
+		return reading;
 	}
 	
 	@Scheduled(fixedRateString="${ktha.system.timeoutBetweenReads}", initialDelay = 1000)
 	private void queryAllSensors()
 	{
 		LoggerFactory.getLogger(this.getClass()).info("Quering Sensors..");
-		this.queryDs1820Sensors();
-		this.queryMcp3008Sensors();
+		@SuppressWarnings("rawtypes")
+		List<SensorReading> readings = new ArrayList<SensorReading>();
+		this.readDs1820Sensors(readings);
+		this.read3008Sensors(readings);
+		this.sensorReadingClient.sendMultipleReadings(readings);
 	}
 
-	private void queryMcp3008Sensors()
+	private void read3008Sensors(@SuppressWarnings("rawtypes") List<SensorReading> readings)
 	{
 		for (Entry<String, MCP3008Sensor> mcp3008Sensor : this.sensorConfiguration.getMcp3008().entrySet())
 		{
-			Double value = this.readSensor(mcp3008Sensor.getKey());
-			try
-			{				
-				this.sensorReadingClient.sendNumericReading(value, mcp3008Sensor.getKey());
-			}
-			catch(RestClientException e)
-			{
-				LoggerFactory.getLogger(this.getClass()).error(e.getMessage(), e);
-			}
+			readings.add(this.readValueFromMcp3008(mcp3008Sensor.getKey()));
 		}
 	}
 
-	private void queryDs1820Sensors()
+	private void readDs1820Sensors(@SuppressWarnings("rawtypes") List<SensorReading> readings)
 	{
 		for (Entry<String, DS1820Sensor> ds1820sensor : this.sensorConfiguration.getDs1820().entrySet())
 		{
-			Double value = this.readSensor(ds1820sensor.getKey());
-			try
-			{
-				this.sensorReadingClient.sendNumericReading(value, ds1820sensor.getKey());
-			} catch (RestClientException e)
-			{
-				LoggerFactory.getLogger(this.getClass()).error(e.getMessage(), e);
-			}
+			readings.add(this.readValueFromDs1820(ds1820sensor.getKey()));
 		}
 	}
 }

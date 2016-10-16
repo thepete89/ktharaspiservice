@@ -23,7 +23,7 @@
  * MA 02110-1301  USA
  */
 
-package de.kawumtech.ktharaspiservice.hardware.rcswitch;
+package de.kawumtech.ktharaspiservice.hardware.actuators.rcswitch;
 
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioFactory;

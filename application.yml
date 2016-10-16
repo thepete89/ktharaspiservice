@@ -18,7 +18,22 @@ ktha:
 #        pin: 0
 #        spiChannel: CS0
 #        sensorType: ANALOG
-  pwm:
-    pwm_r: 23
-    pwm_g: 24
-    pwm_b: 22
+  actuators:
+    rcswitch:
+      testRc01:
+        pin: 4
+        switchGroup: '00101'
+        switchCode: 1
+    pwm:
+      pwm_r: 
+        pin: 23
+        maxValue: 100
+      pwm_g: 
+        pin: 24
+        maxValue: 100
+      pwm_b:
+        pin: 22
+        maxValue: 100
+    gpio:
+      testGpio01:
+        pin: 29
